@@ -12,6 +12,8 @@ IDrive currently offers 10TB of cloud storage for $4.98/yearly!
 - **Cleanup** of raw replica data, so you never re-compress already archived blocks.
 - **Master cron script** to orchestrate everything in the correct order and avoid overlap.
 
+  Developed by Visual117 for managing and scaling Hyperliquid node infrastructure.
+
 ---
 
 ## 🚀 Usage Overview
@@ -20,5 +22,3 @@ IDrive currently offers 10TB of cloud storage for $4.98/yearly!
 Make sure all scripts are executable:  
 ```bash
 chmod +x /usr/local/bin/hl_*.sh
-
-Developed by Visual117 for managing and scaling Hyperliquid node infrastructure.

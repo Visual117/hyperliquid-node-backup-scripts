@@ -6,23 +6,22 @@ LOG_FILE="/var/log/hl_idrive_backup_periodic_abci_states.log"
 SUCCESS_LOG="/var/log/hl_idrive_successful_backups.txt"
 IDRIVE_CLI="/opt/IDriveForLinux/bin/idrive"
 
-echo "===== $(date) BACKUP periodic_abci_states START =====" | tee -a "$LOG_FILE"
+echo "===== $(date -u) BACKUP periodic_abci_states START =====" | tee -a "$LOG_FILE"
 
-find "$ARCHIVE_DIR" -type f -name 'periodic_abci_states_*.tar.zst' | sort | while read tarfile; do
-  base="${tarfile%.tar.zst}"
-  if [[ -f "${base}.done" && ! -f "${base}.inprogress" ]]; then
-    echo "[INFO] Backing up $tarfile" | tee -a "$LOG_FILE"
-    $IDRIVE_CLI --backup "$tarfile" --silent
-    if [[ $? -eq 0 ]]; then
-      echo "[SUCCESS] $tarfile" | tee -a "$LOG_FILE"
-      echo "$tarfile" >> "$SUCCESS_LOG"
-      rm -f "${base}.done"
-    else
-      echo "[ERROR] Backup failed for $tarfile" | tee -a "$LOG_FILE"
-    fi
+find "$ARCHIVE_DIR" -maxdepth 1 -type f -name 'periodic_abci_states_*.tar.zst' | sort | while read -r tarfile; do
+  # Skip any archives already in the success log
+  if grep -Fxq "$tarfile" "$SUCCESS_LOG"; then
+    echo "[SKIP-DONE] $tarfile already backed up" | tee -a "$LOG_FILE"
+    continue
+  fi
+
+  echo "[INFO] Backing up $tarfile" | tee -a "$LOG_FILE"
+  if $IDRIVE_CLI --backup "$tarfile" --silent; then
+    echo "[SUCCESS] $tarfile" | tee -a "$LOG_FILE"
+    echo "$tarfile" >> "$SUCCESS_LOG"
   else
-    echo "[SKIP] $tarfile" | tee -a "$LOG_FILE"
+    echo "[ERROR] Backup failed for $tarfile" | tee -a "$LOG_FILE"
   fi
 done
 
-echo "===== $(date) BACKUP periodic_abci_states END =====" | tee -a "$LOG_FILE"
+echo "===== $(date -u) BACKUP periodic_abci_states END =====" | tee -a "$LOG_FILE"

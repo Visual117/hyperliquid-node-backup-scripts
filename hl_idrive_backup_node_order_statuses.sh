@@ -8,22 +8,19 @@ IDRIVE_CLI="/opt/IDriveForLinux/bin/idrive"
 
 echo "===== $(date -u) BACKUP node_order_statuses START =====" | tee -a "$LOG_FILE"
 
-find "$ARCHIVE_DIR" -type f -name 'node_order_statuses_*.tar.zst' | sort | while read -r tarfile; do
-  base="${tarfile%.tar.zst}"
-  # only back up if it’s marked done and not in-progress
-  if [[ -f "${base}.done" && ! -f "${base}.inprogress" ]]; then
-    echo "[INFO] Backing up $tarfile" | tee -a "$LOG_FILE"
-    $IDRIVE_CLI --backup "$tarfile" --silent
-    if [[ $? -eq 0 ]]; then
-      echo "[SUCCESS] $tarfile" | tee -a "$LOG_FILE"
-      echo "$tarfile" >> "$SUCCESS_LOG"
-      # clear the .done marker
-      rm -f "${base}.done"
-    else
-      echo "[ERROR] Backup failed for $tarfile" | tee -a "$LOG_FILE"
-    fi
+find "$ARCHIVE_DIR" -maxdepth 1 -type f -name 'node_order_statuses_*.tar.zst' | sort | while read -r tarfile; do
+  # Skip any archives already in the success log
+  if grep -Fxq "$tarfile" "$SUCCESS_LOG"; then
+    echo "[SKIP-DONE] $tarfile already backed up" | tee -a "$LOG_FILE"
+    continue
+  fi
+
+  echo "[INFO] Backing up $tarfile" | tee -a "$LOG_FILE"
+  if $IDRIVE_CLI --backup "$tarfile" --silent; then
+    echo "[SUCCESS] $tarfile" | tee -a "$LOG_FILE"
+    echo "$tarfile" >> "$SUCCESS_LOG"
   else
-    echo "[SKIP] $tarfile" | tee -a "$LOG_FILE"
+    echo "[ERROR] Backup failed for $tarfile" | tee -a "$LOG_FILE"
   fi
 done
 

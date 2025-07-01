@@ -7,6 +7,7 @@ set -euo pipefail
 
 LOG=/var/log/hl_storage_alert.log
 
+# Prepare log
 touch "$LOG"
 exec &>>"$LOG"
 
@@ -33,7 +34,7 @@ fi
 echo "DEBUG: Used /data = ${USED_GB}GB"
 
 # Threshold check
-THRESHOLD=1000
+THRESHOLD=940
 if [ "$USED_GB" -lt "$THRESHOLD" ]; then
   echo "INFO: ${USED_GB}GB < ${THRESHOLD}GB — no alert."
   exit 0

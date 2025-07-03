@@ -1,11 +1,60 @@
 #!/usr/bin/env bash
-LOCKDIR="/tmp/hl_group_and_compress_periodic_abci_states.lock"
+#
+# /usr/local/bin/hl_group_and_compress_periodic_abci_states_locked.sh
+# — Compress yesterday’s periodic_abci_states with live progress,
+#   logging, and .inprogress/.done markers
 
-# simple mkdir-as-lock
-if ! mkdir "$LOCKDIR" 2>/dev/null; then
-  echo "Another instance running, exiting."
+set -euo pipefail
+
+LOG=/var/log/hl_group_and_compress_periodic_abci_states.log
+SRC_BASE=/var/lib/hyperliquid/data/periodic_abci_states
+ARCHIVE_DIR=/data/hyperliquid-archives/periodic_abci_states
+
+YESTERDAY=$(date -u -d 'yesterday' +%Y%m%d)
+SRC_DIR=${SRC_BASE}/${YESTERDAY}
+ARCHIVE=${ARCHIVE_DIR}/periodic_abci_states_${YESTERDAY}.tar.zst
+INPROG=${ARCHIVE}.inprogress
+DONE=${ARCHIVE}.done
+
+mkdir -p "$ARCHIVE_DIR"
+echo "===== $(date -u '+%Y-%m-%dT%H:%M:%SZ') Compress periodic_abci_states for $YESTERDAY =====" | tee -a "$LOG"
+
+# Skip if already done
+if [[ -f "$DONE" ]]; then
+  echo "[SKIP] Already handled $YESTERDAY" | tee -a "$LOG"
+  exit 0
+fi
+
+# Remove any orphan
+if [[ -f "$INPROG" || -f "$ARCHIVE" ]]; then
+  echo "[WARN] Removing orphan $INPROG/$ARCHIVE" | tee -a "$LOG"
+  rm -f "$INPROG" "$ARCHIVE"
+fi
+
+# Verify source exists
+if [[ ! -d "$SRC_DIR" ]]; then
+  echo "[ERROR] Source dir not found: $SRC_DIR" | tee -a "$LOG"
   exit 1
 fi
-trap "rmdir '$LOCKDIR'" EXIT
 
-/usr/local/bin/hl_group_and_compress_periodic_abci_states.sh
+# Start
+touch "$INPROG"
+echo "[INFO] Starting compression with live progress…" | tee -a "$LOG"
+
+# Compute size for pv
+SIZE=$(du -sb "$SRC_DIR" | awk '{print $1}')
+
+tar -cf - -C "$SRC_BASE" "$YESTERDAY" \
+  | pv -f -s "$SIZE" -p -e -r -b \
+  | zstd --progress -v -9 -T0 -o "$ARCHIVE"
+
+# Check exit codes
+if [[ ${PIPESTATUS[0]} -ne 0 || ${PIPESTATUS[2]} -ne 0 ]]; then
+  echo "[ERROR] Compression failed for $YESTERDAY" | tee -a "$LOG"
+  rm -f "$INPROG"
+  exit 1
+fi
+
+rm -f "$INPROG"
+touch "$DONE"
+echo "[DONE] $ARCHIVE" | tee -a "$LOG"

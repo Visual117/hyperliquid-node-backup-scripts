@@ -15,6 +15,8 @@ This repository contains all scripts and instructions needed to automate, compre
   - Runs daily at 2:30 AM Eastern via cron.
 
 ## Example crontab
+30 0 * * *    /usr/local/bin/hl_daily_backup_and_compress.sh >> /var/log/hl_daily_backup_and_compress_cron.log 2>&1
+30 2 * * *    /usr/local/bin/hl_prune_zst_archives.sh >> /var/log/hl_prune_zst_archives_cron.log 2>&1
 
 
 # Hyperliquid Node Backup & Cleanup Automation

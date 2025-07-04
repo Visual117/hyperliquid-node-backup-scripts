@@ -1,3 +1,22 @@
+# Hyperliquid Node Backup & Prune Automation (July 2025)
+
+This repository contains all scripts and instructions needed to automate, compress, offload, and prune Hyperliquid node data.
+
+## Active Automation Scripts
+
+- **hl_daily_backup_and_compress.sh**  
+  Compresses, offloads, and deletes yesterday's raw `node_order_statuses` and `periodic_abci_states` folders.  
+  - Runs nightly at 12:30 AM Eastern via cron.
+  - After compressing (`zstd -19 --rm`), invokes the backup/upload scripts for iDrive/S3.
+  - Original raw folders are deleted after compression to minimize disk use.
+
+- **hl_prune_zst_archives.sh**  
+  Prunes local `.zst` archives, keeping only the 2 most recent per folder for quick local restore if needed.  
+  - Runs daily at 2:30 AM Eastern via cron.
+
+## Example crontab
+
+
 # Hyperliquid Node Backup & Cleanup Automation
 
 Automated scripts for **Hyperliquid node operators** to manage, compress, back up, and clean up large data directories. This suite is designed to prevent disk bloat, automate offsite backups (via IDrive), and keep your node healthy with minimal manual intervention.

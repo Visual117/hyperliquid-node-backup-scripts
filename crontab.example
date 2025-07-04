@@ -1,0 +1,2 @@
+30 0 * * *    /usr/local/bin/hl_daily_backup_and_compress.sh >> /var/log/hl_daily_backup_and_compress_cron.log 2>&1
+30 2 * * *    /usr/local/bin/hl_prune_zst_archives.sh >> /var/log/hl_prune_zst_archives_cron.log 2>&1
